@@ -1,0 +1,17 @@
+Metric,Score
+Accuracy,0.9793621013133208
+Balanced Accuracy,0.973015533641253
+Precision (Stress),0.8947368421052632
+Recall / Sensitivity,0.9642416769420469
+Specificity,0.9817893903404592
+F1-Score (Weighted),0.9796831697319094
+F1-Score (Macro),0.9580696592043837
+ROC-AUC,0.9968397714325881
+Matthews Corr Coef (MCC),0.91703313544911
+Cohen Kappa,0.9161589864335362
+Log Loss,0.053858247599371356
+Brier Score,0.015982257046116603
+Total Windows Evaluated,5863.0
+Correct Predictions,5742.0
+Incorrect Predictions,121.0
+Mean Prediction Confidence (%),97.87406899019723

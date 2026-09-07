@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ============================================================
+   NSRI Design System — Coral + Earthy + Psychology
+   ============================================================ */
+
+:root {
+  /* ---- Page backgrounds ---- */
+  --background:          #F3EEE7;
+  --background-secondary:#EAE2D8;
+
+  /* ---- Surfaces ---- */
+  --surface:             #FBF8F2;
+  --surface-elevated:    #FFFDF9;
+  --surface-soft:        #F0E8DE;
+
+  /* ---- Text ---- */
+  --text-primary:        #30322F;
+  --text-secondary:      #686A62;
+  --text-muted:          #96958C;
+
+  /* ---- Borders ---- */
+  --border:              #DED6CB;
+  --border-light:        #EAE3D9;
+  --border-subtle:       #EAE3D9;
+
+  /* ---- Primary — Coral (Personality / Action) ---- */
+  --primary:             #D98272;
+  --primary-hover:       #C66F60;
+  --primary-dark:        #C66F60;
+  --primary-light:       #F2D8D2;
+  --primary-soft:        #F7E6E1;
+
+  /* ---- Earth / Sage ---- */
+  --sage:                #718774;
+  --sage-dark:           #5D7160;
+  --sage-light:          #DEE7DE;
+  
+  /* ---- Secondary Alias (mapping to Sage) ---- */
+  --secondary:           #718774;
+  --secondary-hover:     #5D7160;
+  --secondary-light:     #DEE7DE;
+  --secondary-soft:      #DEE7DE;
+
+  /* ---- Analytical Blue ---- */
+  --blue:                #7D91A5;
+  --blue-light:          #E1E7EC;
+
+  /* ---- Warm Earth (Terracotta/Ochre notes) ---- */
+  --earth:               #A8795D;
+  --earth-light:         #EBDDD1;
+  --accent:              #A8795D;
+
+  /* ---- Semantic ---- */
+  --success:             #718774;
+  --success-bg:          #DEE7DE;
+  --success-border:      #A9BFA9;
+
+  --warning:             #B78B59;
+  --warning-bg:          #F1DFCD;
+  --warning-border:      #CFA271;
+
+  --danger:              #B9675D;
+  --danger-bg:           #F2D8D2;
+  --danger-border:       #C66F60;
+
+  /* ---- Inputs ---- */
+  --input-bg:            #FFFDF9;
+  --input-border:        #DED6CB;
+  --input-focus:         #F2D8D2;
+
+  /* ---- Aliases for backward compatibility ---- */
+  --bg-dark:             var(--background);
+  --surface-color:       var(--surface);
+  --surface-border:      var(--border);
+  --error:               var(--danger);
+  --error-bg:            var(--danger-bg);
+  --error-border:        var(--danger-border);
+  --primary-glow:        rgba(217, 130, 114, 0.15);
+
+  /* ---- Shadows ---- */
+  --shadow-xs:           0 1px 3px rgba(70, 57, 45, 0.04);
+  --shadow-sm:           0 2px 8px rgba(70, 57, 45, 0.06);
+  --shadow-md:           0 6px 20px rgba(70, 57, 45, 0.08);
+  --shadow-lg:           0 12px 32px rgba(70, 57, 45, 0.1);
+
+  /* ---- Typography ---- */
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Reset ---- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---- Body — warm sand/beige ---- */
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
