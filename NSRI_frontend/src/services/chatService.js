@@ -19,7 +19,7 @@ const TIMEOUT_MS = 30000;
  * @returns {Promise<string>}     - The assistant's response text.
  * @throws {Error}                - A user-friendly error message string.
  */
-export const sendChatMessage = async (message, nsriData = null) => {
+export const sendChatMessage = async (message, nsriData = null, voiceMode = false) => {
   if (!message || !message.trim()) {
     throw new Error('Please enter a message before sending.');
   }
@@ -28,13 +28,16 @@ export const sendChatMessage = async (message, nsriData = null) => {
   // nsri_context is included only when the dashboard has already loaded
   // NSRI data for this user. The backend treats it as optional — if absent
   // the chatbot behaves as a general educational assistant.
-  const body = { message: message.trim() };
+  const body = { 
+    message: message.trim(),
+    voice_mode: Boolean(voiceMode)
+  };
 
   if (nsriData && typeof nsriData === 'object') {
     // Pass only the fields that nsri_context_service.py recognises.
     // All values are re-validated server-side; we do not calculate anything here.
     body.nsri_context = {
-      nsri: nsriData.nsri ?? null,
+      nsri: nsriData.nsri ?? nsriData.nsri_score ?? nsriData.composite_nsri ?? null,
       sai: nsriData.sai ?? null,
       pri: nsriData.pri ?? null,
       rdt: nsriData.rdt ?? null,

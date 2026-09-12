@@ -18,6 +18,23 @@ import { fetchDashboardData } from '../services/dashboardService';
 import { getSnapshots, createSnapshot, deleteSnapshot } from '../services/snapshotService';
 import '../styles/Dashboard.css';
 
+const DEFAULT_SIMULATED_BASELINE = {
+  nsri: 28,
+  state: 'Balanced',
+  sai: 22,
+  pri: 78,
+  rdt: 15,
+  heart_rate: 68,
+  hrv: 65,
+  Temp_Mean: 33.2,
+  SCR_Peaks_N: 1,
+  stress_probability: 0.22,
+  skin_temperature: 33.2,
+  eda_peaks: 1,
+  recovery_signal: 'Optimal',
+  composite_nsri: 28
+};
+
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState({ nsri_data: null, previous_nsri_data: null });
   const [loading, setLoading] = useState(true);
@@ -33,11 +50,78 @@ const Dashboard = () => {
   const [headerSaving, setHeaderSaving] = useState(false);
   const [headerSavedToast, setHeaderSavedToast] = useState(null);
 
+  // Auto-start simulated baseline telemetry stream if no prior measurement exists
+  const autoStartSimulatedStream = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('nsri_token');
+      if (!token) return;
+
+      const scenario = {
+        wesad: {
+          Mean_RR: 0.88, Mean_HR: 68, SDNN: 75, RMSSD: 65, pNN50: 35,
+          SCR_Peaks_N: 1, SCR_Peaks_Amplitude_Mean: 0.1, EDA_Tonic_SD: 0.08,
+          Resp_Rate_Mean: 14, Resp_Rate_Std: 1.2, Resp_Amplitude_Std: 1.0,
+          Temp_Mean: 33.2, Temp_Std: 0.05, Temp_Min: 33.1, Temp_Max: 33.3,
+          ACC_Magnitude_Mean: 1.0, ACC_Magnitude_Std: 0.1, ACC_Magnitude_Max: 1.2
+        },
+        hrv_normalized: 0.85,
+        resting_hr_normalized: 0.25
+      };
+      const measurement_id = `telemetry-${Date.now()}`;
+
+      // 1. WESAD ML Inference
+      const wesadRes = await fetch('/api/v1/predict/wesad', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...scenario.wesad, measurement_id })
+      });
+      const wesadData = wesadRes.ok ? await wesadRes.json() : null;
+
+      // 2. MMASH ML Inference
+      const mmashRes = await fetch('/api/v1/predict/mmash', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mean_hr: scenario.wesad.Mean_HR,
+          sdnn: scenario.wesad.SDNN,
+          rmssd: scenario.wesad.RMSSD,
+          measurement_id
+        })
+      });
+      const mmashData = mmashRes.ok ? await mmashRes.json() : null;
+
+      // 3. Stateful NSRI Calculation Engine
+      await fetch('/api/v1/nsri/calculate', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wesad_stress_probability: wesadData?.probability_class_1 ?? wesadData?.stress_probability ?? 0.22,
+          mmash_stress_probability: mmashData?.probability_class_1 ?? mmashData?.stress_probability ?? 0.20,
+          hrv_normalized: scenario.hrv_normalized,
+          resting_hr_normalized: scenario.resting_hr_normalized,
+          external_stress_score: 12.0,
+          measurement_id
+        })
+      });
+
+      const freshData = await fetchDashboardData();
+      setDashboardData(freshData);
+      setLastUpdateTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    } catch (e) {
+      console.warn('Auto-start simulated stream non-blocking error:', e);
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     try {
       const data = await fetchDashboardData();
-      setDashboardData(data);
-      setLastUpdateTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      if (!data || !data.nsri_data) {
+        // Automatically start simulated stream in database
+        await autoStartSimulatedStream();
+      } else {
+        setDashboardData(data);
+        setLastUpdateTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      }
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       if (err.message !== 'Authentication expired') {
@@ -46,7 +130,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [autoStartSimulatedStream]);
 
   const refreshSnapshots = useCallback(async () => {
     try {
@@ -64,7 +148,7 @@ const Dashboard = () => {
     refreshSnapshots();
   }, [loadData, refreshSnapshots]);
 
-  // Periodic subtle live sync when monitoring is active
+  // Periodic live sync when monitoring is active
   useEffect(() => {
     if (!isMonitoringActive) return;
     const interval = setInterval(() => {
@@ -73,21 +157,21 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [isMonitoringActive, loadData]);
 
-  const hasData = dashboardData && dashboardData.nsri_data;
-  const currentNSRI = hasData ? dashboardData.nsri_data : null;
+  const hasData = Boolean(dashboardData && dashboardData.nsri_data);
+  const currentNSRI = dashboardData?.nsri_data || DEFAULT_SIMULATED_BASELINE;
   const previousNSRI = dashboardData?.previous_nsri_data;
 
   // Header quick save snapshot handler
   const handleHeaderSaveSnapshot = async () => {
     try {
       setHeaderSaving(true);
-      const score = currentNSRI ? Math.round(currentNSRI.nsri ?? currentNSRI.nsri_score ?? currentNSRI.composite_nsri ?? 0) : null;
-      const state = currentNSRI ? (currentNSRI.state ?? currentNSRI.nsri_state ?? 'Balanced') : 'Balanced';
-      const sai = currentNSRI ? Math.round(currentNSRI.sai ?? 0) : null;
-      const pri = currentNSRI ? Math.round(currentNSRI.pri ?? 50) : null;
-      const rdt = currentNSRI ? Math.round(currentNSRI.rdt ?? 0) : null;
-      const hr = currentNSRI ? Math.round(currentNSRI.heart_rate ?? 70) : null;
-      const hrv = currentNSRI ? Math.round(currentNSRI.hrv ?? 45) : null;
+      const score = Math.round(currentNSRI.nsri ?? currentNSRI.nsri_score ?? currentNSRI.composite_nsri ?? 28);
+      const state = currentNSRI.state ?? currentNSRI.nsri_state ?? 'Balanced';
+      const sai = Math.round(currentNSRI.sai ?? 22);
+      const pri = Math.round(currentNSRI.pri ?? 78);
+      const rdt = Math.round(currentNSRI.rdt ?? 15);
+      const hr = Math.round(currentNSRI.heart_rate ?? currentNSRI.Mean_HR ?? 68);
+      const hrv = Math.round(currentNSRI.hrv ?? currentNSRI.RMSSD ?? 65);
 
       const niraElem = document.querySelector('.nira-interp-body');
       const savedNira = niraElem ? niraElem.textContent.trim() : `Current autonomic state is ${state} with responsive recovery reserves.`;
@@ -105,9 +189,9 @@ const Dashboard = () => {
         rdt,
         heart_rate: hr,
         hrv,
-        stress_probability: currentNSRI?.stress_probability ?? 0.25,
-        skin_temperature: currentNSRI?.skin_temperature ?? 34.5,
-        eda_peaks: currentNSRI?.eda_peaks ?? 2,
+        stress_probability: currentNSRI?.stress_probability ?? 0.22,
+        skin_temperature: currentNSRI?.skin_temperature ?? currentNSRI?.Temp_Mean ?? 33.2,
+        eda_peaks: currentNSRI?.eda_peaks ?? currentNSRI?.SCR_Peaks_N ?? 1,
         recovery_signal: score <= 20 ? 'Optimal' : score <= 40 ? 'Stable' : score <= 60 ? 'Declining' : 'Depleted',
         telemetry_source: 'Simulated Physiological Stream',
         data_quality: 'Optimal (98%)',
@@ -174,7 +258,7 @@ const Dashboard = () => {
             <button 
               className="snapshot-save-header-btn"
               onClick={handleHeaderSaveSnapshot}
-              disabled={headerSaving || !hasData}
+              disabled={headerSaving}
               title="Freeze and save current state to MongoDB"
               style={{
                 display: 'inline-flex',
@@ -220,31 +304,10 @@ const Dashboard = () => {
 
         <div className="dashboard-grid">
           {/* Section 1: Hero Current State */}
-          {loading ? (
-            <div className="section-full glass-card" style={{ padding: '48px', textAlign: 'center' }}>
-              <div className="spinner-loader"></div>
-              <p className="placeholder-text" style={{ marginTop: '16px' }}>Synchronizing nervous system telemetry...</p>
-            </div>
-          ) : !hasData ? (
-            <div className="section-full glass-card empty-state-card" style={{ padding: '40px', textAlign: 'center' }}>
-              <div className="empty-icon-wrapper">
-                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                </svg>
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text-primary)', marginTop: '14px' }}>
-                Connecting to Wearable Stream
-              </h3>
-              <p className="placeholder-text" style={{ maxWidth: '520px', margin: '8px auto 20px', fontSize: '14px' }}>
-                Select a monitoring scenario below to stream simulated biosensor telemetry and calculate real-time NSRI recovery indices.
-              </p>
-            </div>
-          ) : (
-            <CurrentStateHero data={currentNSRI} previousData={previousNSRI} />
-          )}
+          <CurrentStateHero data={currentNSRI} previousData={previousNSRI} />
 
           {/* Section 2: Live Biosensor Signals */}
-          {hasData && <LiveSignals data={currentNSRI} isMonitoringActive={isMonitoringActive} />}
+          <LiveSignals data={currentNSRI} isMonitoringActive={isMonitoringActive} />
 
           {/* Section 3: NIRA Insight (Continuous Interpretation Layer) */}
           <NIRAInsight data={currentNSRI} previousData={previousNSRI} />
@@ -257,23 +320,23 @@ const Dashboard = () => {
           />
 
           {/* Section 5: Core NSRI Indicators (SAI, PRI, RDT) */}
-          {hasData && <CoreSignals data={currentNSRI} />}
+          <CoreSignals data={currentNSRI} />
 
           {/* Section 6: Score Drivers & Environmental Context */}
-          {hasData && <ScoreBreakdown data={currentNSRI} />}
+          <ScoreBreakdown data={currentNSRI} />
 
           {/* Section 7: Personalized Recovery Guidance */}
-          {hasData && <RecoveryGuidance data={currentNSRI} />}
+          <RecoveryGuidance data={currentNSRI} />
 
           {/* Section 8: Recovery Trajectory Curve */}
           <RecoveryTrend currentData={currentNSRI} />
 
-          {/* Section 9: Live Wearable Simulation & 24-Hour Timeline */}
+          {/* Section 9: Live Physiological Simulation & 24-Hour Timeline */}
           <MeasurementInput onMeasurementSaved={() => { loadData(); refreshSnapshots(); }} />
 
           {/* Section 10: NIRA (Nervous-system Intelligence & Recovery Assistant) */}
           <div id="nira-assistant" className="glass-card section-full" style={{ padding: '0', overflow: 'hidden' }}>
-            <AIChat nsriData={currentNSRI} />
+            <AIChat nsriData={currentNSRI} onSnapshotSaved={refreshSnapshots} />
           </div>
 
           {/* Section 11: 7-Day History Logs */}

@@ -113,7 +113,7 @@ const NIRAInsight = ({ data = null, previousData = null, history = [] }) => {
   }
 
   // 5. "WHAT CAN I DO NOW?" — Contextual Recommendation
-  let whatCanIDoText = 'Connect telemetry stream to view personalized recovery actions.';
+  let whatCanIDoText = 'Initializing simulated physiological stream to generate personalized recovery actions...';
   if (hasData) {
     if (score <= 20) {
       whatCanIDoText = 'Continue your normal routine while maintaining regular hydration and scheduled recovery periods.';

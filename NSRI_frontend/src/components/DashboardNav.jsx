@@ -20,7 +20,7 @@ const DashboardNav = ({ onOpenHowItWorks }) => {
     { name: 'Recovery Trajectory', path: '#trajectory', icon: 'M3 3v18h18 M19 9l-5 5-4-4-3 3' },
     { name: 'Recovery Guidance', path: '#recovery-guidance', icon: 'M9 12l2 2 4-4 M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z' },
     { name: 'Timeline Replay', path: '#timeline', icon: 'M12 8v4l3 3 M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z' },
-    { name: 'NIRA Assistant', path: '#nira-assistant', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
+    { name: 'NIRA Assistant & Voice', path: '#nira-assistant', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
     { name: 'History Logs', path: '#history', icon: 'M12 8v4l3 3 M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5' },
   ];
 

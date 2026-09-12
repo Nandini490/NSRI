@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { sendChatMessage } from '../../services/chatService';
+import NIRAVoice from '../NIRAVoice/NIRAVoice';
 import './AIChat.css';
 
 const PRIMARY_ACTIONS = [
@@ -50,7 +51,8 @@ const Message = ({ msg }) => (
   </div>
 );
 
-const AIChat = ({ nsriData = null }) => {
+const AIChat = ({ nsriData = null, onSnapshotSaved = null }) => {
+  const [activeMode, setActiveMode] = useState('chat'); // 'chat' | 'voice'
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -200,121 +202,155 @@ const AIChat = ({ nsriData = null }) => {
         NIRA is the intelligence layer of NSRI, translating physiological signals and recovery patterns into understandable, context-aware guidance.
       </p>
 
-      {/* Current NSRI Context Section */}
-      <div className="nira-context-panel">
-        <div className="context-panel-header">
-          <span className="context-panel-title">Current NSRI Context</span>
-          <span className="context-source-tag">Simulated Physiological Stream</span>
-        </div>
-
-        {hasTelemetry ? (
-          <>
-            <div className="nira-telemetry-chips-row">
-              <div className="nira-chip chip-score">
-                <span className="chip-label">NSRI</span>
-                <span className="chip-val">{score} / 100</span>
-              </div>
-              <div className="nira-chip chip-state">
-                <span className="chip-label">State</span>
-                <span className="chip-val">{stateLabel}</span>
-              </div>
-              <div className="nira-chip">
-                <span className="chip-label">SAI</span>
-                <span className="chip-val">{sai}</span>
-              </div>
-              <div className="nira-chip">
-                <span className="chip-label">PRI</span>
-                <span className="chip-val">{pri}</span>
-              </div>
-              <div className="nira-chip">
-                <span className="chip-label">RDT</span>
-                <span className="chip-val">{rdt}</span>
-              </div>
-              <div className="nira-chip">
-                <span className="chip-label">Heart Rate</span>
-                <span className="chip-val">{heartRate} BPM</span>
-              </div>
-              <div className="nira-chip">
-                <span className="chip-label">HRV (RMSSD)</span>
-                <span className="chip-val">{hrv} ms</span>
-              </div>
-            </div>
-
-            {/* Dynamic Insight Box */}
-            <div className="nira-insight-box">
-              <div className="insight-pulse-indicator"></div>
-              <p className="insight-text">{dynamicInsight}</p>
-            </div>
-          </>
-        ) : (
-          <div className="nira-waiting-state">
-            <span className="waiting-icon">○</span>
-            <span>Waiting for monitoring data to initialize NIRA's contextual analysis...</span>
-          </div>
-        )}
-
-        {/* Primary Action Buttons */}
-        <div className="nira-primary-actions-grid">
-          {PRIMARY_ACTIONS.map((action) => (
-            <button
-              key={action.label}
-              className="nira-action-btn"
-              onClick={() => sendMessage(action.query)}
-              disabled={isLoading || !hasTelemetry}
-            >
-              <svg className="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d={action.icon} />
-              </svg>
-              <span>{action.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Conversation Area */}
-      <div className="nira-conversation-box">
-        {messages.length === 0 ? (
-          <div className="nira-empty-conversation">
-            <p className="empty-prompt-heading">Ask NIRA</p>
-            <p className="empty-prompt-sub">
-              Ask about your current recovery state, stress accumulation, or practical non-clinical recovery guidance.
-            </p>
-          </div>
-        ) : (
-          <div className="nira-messages-list">
-            {messages.map((msg) => (
-              <Message key={msg.id} msg={msg} />
-            ))}
-            {isLoading && <TypingIndicator />}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </div>
-
-      {/* Input Bar */}
-      <div className="nira-input-bar">
-        <textarea
-          ref={textareaRef}
-          className="nira-textarea"
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask NIRA about your current recovery state, stress debt, or pacing..."
-          rows={1}
-          disabled={isLoading}
-        />
+      {/* Mode Switcher Tabs: Chat vs Voice */}
+      <div className="nira-mode-switcher">
         <button
-          className="nira-send-btn"
-          onClick={() => sendMessage()}
-          disabled={!inputValue.trim() || isLoading}
-          aria-label="Send question to NIRA"
+          className={`nira-mode-tab ${activeMode === 'chat' ? 'active' : ''}`}
+          onClick={() => setActiveMode('chat')}
+          aria-label="Switch to NIRA Text Chat"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
+          <span>Chat</span>
+        </button>
+
+        <button
+          className={`nira-mode-tab ${activeMode === 'voice' ? 'active' : ''}`}
+          onClick={() => setActiveMode('voice')}
+          aria-label="Switch to NIRA Voice Interaction"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+          <span>NIRA Voice</span>
         </button>
       </div>
+
+      {activeMode === 'voice' ? (
+        <NIRAVoice nsriData={nsriData} onSnapshotSaved={onSnapshotSaved} />
+      ) : (
+        <>
+          {/* Current NSRI Context Section */}
+          <div className="nira-context-panel">
+            <div className="context-panel-header">
+              <span className="context-panel-title">Current NSRI Context</span>
+              <span className="context-source-tag">Simulated Physiological Stream</span>
+            </div>
+
+            {hasTelemetry ? (
+              <>
+                <div className="nira-telemetry-chips-row">
+                  <div className="nira-chip chip-score">
+                    <span className="chip-label">NSRI</span>
+                    <span className="chip-val">{score} / 100</span>
+                  </div>
+                  <div className="nira-chip chip-state">
+                    <span className="chip-label">State</span>
+                    <span className="chip-val">{stateLabel}</span>
+                  </div>
+                  <div className="nira-chip">
+                    <span className="chip-label">SAI</span>
+                    <span className="chip-val">{sai}</span>
+                  </div>
+                  <div className="nira-chip">
+                    <span className="chip-label">PRI</span>
+                    <span className="chip-val">{pri}</span>
+                  </div>
+                  <div className="nira-chip">
+                    <span className="chip-label">RDT</span>
+                    <span className="chip-val">{rdt}</span>
+                  </div>
+                  <div className="nira-chip">
+                    <span className="chip-label">Heart Rate</span>
+                    <span className="chip-val">{heartRate} BPM</span>
+                  </div>
+                  <div className="nira-chip">
+                    <span className="chip-label">HRV (RMSSD)</span>
+                    <span className="chip-val">{hrv} ms</span>
+                  </div>
+                </div>
+
+                {/* Dynamic Insight Box */}
+                <div className="nira-insight-box">
+                  <div className="insight-pulse-indicator"></div>
+                  <p className="insight-text">{dynamicInsight}</p>
+                </div>
+              </>
+            ) : (
+              <div className="nira-waiting-state">
+                <span className="waiting-icon">○</span>
+                <span>Waiting for monitoring data to initialize NIRA's contextual analysis...</span>
+              </div>
+            )}
+
+            {/* Primary Action Buttons */}
+            <div className="nira-primary-actions-grid">
+              {PRIMARY_ACTIONS.map((action) => (
+                <button
+                  key={action.label}
+                  className="nira-action-btn"
+                  onClick={() => sendMessage(action.query)}
+                  disabled={isLoading || !hasTelemetry}
+                >
+                  <svg className="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={action.icon} />
+                  </svg>
+                  <span>{action.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Conversation Area */}
+          <div className="nira-conversation-box">
+            {messages.length === 0 ? (
+              <div className="nira-empty-conversation">
+                <p className="empty-prompt-heading">Ask NIRA</p>
+                <p className="empty-prompt-sub">
+                  Ask about your current recovery state, stress accumulation, or practical non-clinical recovery guidance.
+                </p>
+              </div>
+            ) : (
+              <div className="nira-messages-list">
+                {messages.map((msg) => (
+                  <Message key={msg.id} msg={msg} />
+                ))}
+                {isLoading && <TypingIndicator />}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Input Bar */}
+          <div className="nira-input-bar">
+            <textarea
+              ref={textareaRef}
+              className="nira-textarea"
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask NIRA about your current recovery state, stress debt, or pacing..."
+              rows={1}
+              disabled={isLoading}
+            />
+            <button
+              className="nira-send-btn"
+              onClick={() => sendMessage()}
+              disabled={!inputValue.trim() || isLoading}
+              aria-label="Send question to NIRA"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
