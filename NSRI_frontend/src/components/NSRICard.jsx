@@ -23,20 +23,25 @@ const NSRICard = ({ current, previous }) => {
     }
   }
 
-  // Determine status based on actual NSRI score
-  let statusText = 'Balanced';
-  if (currentScore >= 95) statusText = 'Burnout Risk';
-  else if (currentScore >= 80) statusText = 'Exhausted';
-  else if (currentScore >= 60) statusText = 'Dysregulated';
-  else if (currentScore >= 40) statusText = 'Strained';
-  else if (currentScore >= 20) statusText = 'Loaded';
-  else statusText = 'Balanced';
+  // Check data staleness
+  let isStale = false;
+  if (current.created_at) {
+    const ageMs = Date.now() - new Date(current.created_at).getTime();
+    isStale = Math.floor(ageMs / (1000 * 60 * 60)) >= 12;
+  }
+
+  // Determine status based on actual NSRI state from backend
+  const statusText = current.state || 'Balanced';
 
   // Build contributing factors
   const factors = [];
-  if (current.sai > 50) factors.push('Stress');
-  if (current.pri < 50) factors.push('Recovery');
-  if (current.rdt > 0) factors.push('Environment');
+  if (isStale) {
+    factors.push('Data is Stale');
+  } else {
+    if (current.sai > 50) factors.push('Stress');
+    if (current.pri < 50) factors.push('Recovery');
+    if (current.rdt > 0) factors.push('Environment');
+  }
 
   return (
     <div className="glass-card section-third nsri-card">
