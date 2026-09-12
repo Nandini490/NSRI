@@ -15,6 +15,7 @@ const DashboardNav = ({ onOpenHowItWorks }) => {
     { name: 'Overview', path: '#overview', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
     { name: 'Live Signals', path: '#signals', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
     { name: 'NIRA Insight', path: '#nira-insight', icon: 'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z' },
+    { name: 'Snapshots & Reports', path: '#snapshots', icon: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
     { name: 'Score Drivers', path: '#breakdown', icon: 'M12 20V10 M18 20V4 M6 20v-4' },
     { name: 'Recovery Trajectory', path: '#trajectory', icon: 'M3 3v18h18 M19 9l-5 5-4-4-3 3' },
     { name: 'Recovery Guidance', path: '#recovery-guidance', icon: 'M9 12l2 2 4-4 M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z' },

@@ -1,0 +1,488 @@
+/* Snapshot Detail Modal Styles & PDF Print Stylesheet */
+
+.snapshot-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 17, 16, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 24px;
+  overflow-y: auto;
+  animation: fadeInModal 0.25s ease-out;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.snapshot-detail-container {
+  background: var(--surface, #201E1D);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 16px;
+  width: 100%;
+  max-width: 840px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Modal Header */
+.snapshot-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+  background: var(--surface-soft, rgba(255, 255, 255, 0.03));
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+.detail-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.detail-logo-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(217, 130, 114, 0.12);
+  border: 1px solid rgba(217, 130, 114, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary, #D98272);
+}
+
+.detail-title-group h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.detail-timestamp-str {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.detail-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--primary, #D98272);
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.detail-export-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.detail-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.detail-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* Modal Body */
+.snapshot-detail-body {
+  padding: 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Main Score Card Banner */
+.detail-score-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-radius: 14px;
+  background: var(--surface-soft, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+.detail-score-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.detail-score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+}
+
+.detail-score-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.detail-score-denom {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.detail-state-info h4 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-state-info p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+
+/* Metric Trio Grid (SAI, PRI, RDT) */
+.detail-trio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.detail-trio-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-soft, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-trio-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.detail-trio-val {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-trio-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Section Container */
+.detail-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--surface-soft, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.detail-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+/* Physiological Signals Grid */
+.detail-physio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.physio-stat-item {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.physio-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.physio-stat-val {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+/* Recovery Block */
+.detail-recovery-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-recovery-signal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.detail-guidance-box {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(113, 135, 116, 0.1);
+  border: 1px solid rgba(113, 135, 116, 0.2);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* Environmental Context */
+.detail-env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.detail-env-card {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.detail-env-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.detail-env-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 3px;
+}
+
+.detail-env-disclaimer {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* NIRA Insight Block */
+.detail-nira-box {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(217, 130, 114, 0.08);
+  border: 1px solid rgba(217, 130, 114, 0.2);
+}
+
+.detail-nira-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Non-Clinical Footer Disclaimer */
+.detail-footer-disclaimer {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.04));
+}
+
+/* Modal Bottom Actions */
+.snapshot-detail-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 28px;
+  background: var(--surface-soft, rgba(255, 255, 255, 0.03));
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+.footer-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-delete-btn {
+  background: transparent;
+  color: #e57373;
+  border: 1px solid rgba(229, 115, 115, 0.25);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.detail-delete-btn:hover {
+  background: rgba(229, 115, 115, 0.12);
+  border-color: rgba(229, 115, 115, 0.4);
+}
+
+.detail-compare-btn {
+  background: var(--surface-soft, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.detail-compare-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   PRINT / PDF EXPORT STYLESHEET
+   Triggered on window.print()
+   ========================================================================== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .snapshot-detail-overlay,
+  .snapshot-detail-overlay * {
+    visibility: visible;
+  }
+
+  .snapshot-detail-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    background: #ffffff !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
+  }
+
+  .snapshot-detail-container {
+    max-width: 100% !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .snapshot-detail-header {
+    background: #ffffff !important;
+    border-bottom: 2px solid #222222 !important;
+    padding: 16px 0 !important;
+  }
+
+  .detail-header-actions,
+  .snapshot-detail-footer {
+    display: none !important;
+  }
+
+  .snapshot-detail-body {
+    padding: 20px 0 !important;
+    color: #111111 !important;
+  }
+
+  .detail-score-banner,
+  .detail-trio-card,
+  .detail-section-block,
+  .physio-stat-item,
+  .detail-env-card,
+  .detail-guidance-box,
+  .detail-nira-box,
+  .detail-footer-disclaimer {
+    background: #fcfcfc !important;
+    border: 1px solid #dcdcdc !important;
+    color: #111111 !important;
+  }
+
+  .detail-score-number,
+  .detail-trio-val,
+  .physio-stat-val,
+  .detail-env-val,
+  .detail-state-info h4,
+  .detail-title-group h3 {
+    color: #000000 !important;
+  }
+
+  .detail-timestamp-str,
+  .detail-trio-label,
+  .physio-stat-label,
+  .detail-env-label,
+  .detail-section-title {
+    color: #555555 !important;
+  }
+
+  .detail-nira-text,
+  .detail-guidance-box {
+    color: #222222 !important;
+  }
+}

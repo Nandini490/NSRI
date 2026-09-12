@@ -3,6 +3,9 @@ import DashboardNav from '../components/DashboardNav';
 import CurrentStateHero from '../components/CurrentStateHero';
 import LiveSignals from '../components/LiveSignals';
 import NIRAInsight from '../components/NIRAInsight/NIRAInsight';
+import SnapshotsCard from '../components/Snapshots/SnapshotsCard';
+import SnapshotDetailModal from '../components/Snapshots/SnapshotDetailModal';
+import SnapshotComparisonModal from '../components/Snapshots/SnapshotComparisonModal';
 import CoreSignals from '../components/CoreSignals';
 import ScoreBreakdown from '../components/ScoreBreakdown';
 import RecoveryGuidance from '../components/RecoveryGuidance';
@@ -12,6 +15,7 @@ import AIChat from '../components/AIChat/AIChat';
 import History from '../components/History';
 import HowItWorksModal from '../components/HowItWorksModal';
 import { fetchDashboardData } from '../services/dashboardService';
+import { getSnapshots, createSnapshot, deleteSnapshot } from '../services/snapshotService';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
@@ -21,6 +25,13 @@ const Dashboard = () => {
   const [isMonitoringActive, setIsMonitoringActive] = useState(true);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState('Just now');
+
+  // Snapshot State Management
+  const [snapshots, setSnapshots] = useState([]);
+  const [activeSnapshotDetail, setActiveSnapshotDetail] = useState(null);
+  const [compareModal, setCompareModal] = useState({ isOpen: false, idA: null, idB: null });
+  const [headerSaving, setHeaderSaving] = useState(false);
+  const [headerSavedToast, setHeaderSavedToast] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -37,9 +48,21 @@ const Dashboard = () => {
     }
   }, []);
 
+  const refreshSnapshots = useCallback(async () => {
+    try {
+      const res = await getSnapshots();
+      if (res && res.snapshots) {
+        setSnapshots(res.snapshots);
+      }
+    } catch (err) {
+      console.error('Failed to fetch snapshots:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    refreshSnapshots();
+  }, [loadData, refreshSnapshots]);
 
   // Periodic subtle live sync when monitoring is active
   useEffect(() => {
@@ -53,6 +76,78 @@ const Dashboard = () => {
   const hasData = dashboardData && dashboardData.nsri_data;
   const currentNSRI = hasData ? dashboardData.nsri_data : null;
   const previousNSRI = dashboardData?.previous_nsri_data;
+
+  // Header quick save snapshot handler
+  const handleHeaderSaveSnapshot = async () => {
+    try {
+      setHeaderSaving(true);
+      const score = currentNSRI ? Math.round(currentNSRI.nsri ?? currentNSRI.nsri_score ?? currentNSRI.composite_nsri ?? 0) : null;
+      const state = currentNSRI ? (currentNSRI.state ?? currentNSRI.nsri_state ?? 'Balanced') : 'Balanced';
+      const sai = currentNSRI ? Math.round(currentNSRI.sai ?? 0) : null;
+      const pri = currentNSRI ? Math.round(currentNSRI.pri ?? 50) : null;
+      const rdt = currentNSRI ? Math.round(currentNSRI.rdt ?? 0) : null;
+      const hr = currentNSRI ? Math.round(currentNSRI.heart_rate ?? 70) : null;
+      const hrv = currentNSRI ? Math.round(currentNSRI.hrv ?? 45) : null;
+
+      const niraElem = document.querySelector('.nira-interp-body');
+      const savedNira = niraElem ? niraElem.textContent.trim() : `Current autonomic state is ${state} with responsive recovery reserves.`;
+
+      const guidanceElem = document.querySelector('.what-to-do-text');
+      const savedGuidance = guidanceElem ? guidanceElem.textContent.trim() : 'Maintain scheduled recovery periods and regular hydration.';
+
+      const payload = {
+        title: `${state} Snapshot`,
+        scenario: state,
+        nsri_score: score,
+        nsri_state: state,
+        sai,
+        pri,
+        rdt,
+        heart_rate: hr,
+        hrv,
+        stress_probability: currentNSRI?.stress_probability ?? 0.25,
+        skin_temperature: currentNSRI?.skin_temperature ?? 34.5,
+        eda_peaks: currentNSRI?.eda_peaks ?? 2,
+        recovery_signal: score <= 20 ? 'Optimal' : score <= 40 ? 'Stable' : score <= 60 ? 'Declining' : 'Depleted',
+        telemetry_source: 'Simulated Physiological Stream',
+        data_quality: 'Optimal (98%)',
+        nira_insight: savedNira,
+        recovery_guidance: savedGuidance
+      };
+
+      const res = await createSnapshot(payload);
+      await refreshSnapshots();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setHeaderSavedToast(`Snapshot saved at ${timeStr}`);
+      setTimeout(() => setHeaderSavedToast(null), 4000);
+      if (res && res.snapshot) {
+        setActiveSnapshotDetail(res.snapshot);
+      }
+    } catch (err) {
+      console.error('Error saving snapshot:', err);
+    } finally {
+      setHeaderSaving(false);
+    }
+  };
+
+  const handleDeleteSnapshot = async (snapshotId) => {
+    try {
+      await deleteSnapshot(snapshotId);
+      setActiveSnapshotDetail(null);
+      await refreshSnapshots();
+    } catch (err) {
+      console.error('Failed to delete snapshot:', err);
+    }
+  };
+
+  const handleOpenCompare = (idA = null, idB = null) => {
+    setActiveSnapshotDetail(null);
+    setCompareModal({
+      isOpen: true,
+      idA: idA || snapshots[1]?.snapshot_id || snapshots[0]?.snapshot_id,
+      idB: idB || snapshots[0]?.snapshot_id
+    });
+  };
 
   return (
     <div className="dashboard-layout">
@@ -75,6 +170,39 @@ const Dashboard = () => {
             >
               {isMonitoringActive ? 'Pause Stream' : 'Resume Stream'}
             </button>
+
+            <button 
+              className="snapshot-save-header-btn"
+              onClick={handleHeaderSaveSnapshot}
+              disabled={headerSaving || !hasData}
+              title="Freeze and save current state to MongoDB"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '8px',
+                background: 'rgba(217, 130, 114, 0.15)',
+                color: 'var(--primary, #D98272)',
+                border: '1px solid rgba(217, 130, 114, 0.3)',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              {headerSaving ? 'Saving...' : 'Save Snapshot'}
+            </button>
+
+            {headerSavedToast && (
+              <span style={{ fontSize: '12px', color: '#718774', fontWeight: '500' }}>
+                ✓ {headerSavedToast}
+              </span>
+            )}
           </div>
 
           <div className="header-telemetry-meta">
@@ -121,32 +249,59 @@ const Dashboard = () => {
           {/* Section 3: NIRA Insight (Continuous Interpretation Layer) */}
           <NIRAInsight data={currentNSRI} previousData={previousNSRI} />
 
-          {/* Section 4: Core NSRI Indicators (SAI, PRI, RDT) */}
+          {/* Section 4: NSRI Snapshots & Reports (Freeze, Compare & Export) */}
+          <SnapshotsCard 
+            currentNSRI={currentNSRI} 
+            onViewSnapshot={(snap) => setActiveSnapshotDetail(snap)}
+            onOpenCompare={(idA, idB) => handleOpenCompare(idA, idB)}
+          />
+
+          {/* Section 5: Core NSRI Indicators (SAI, PRI, RDT) */}
           {hasData && <CoreSignals data={currentNSRI} />}
 
-          {/* Section 5: Score Drivers & Environmental Context */}
+          {/* Section 6: Score Drivers & Environmental Context */}
           {hasData && <ScoreBreakdown data={currentNSRI} />}
 
-          {/* Section 5: Personalized Recovery Guidance */}
+          {/* Section 7: Personalized Recovery Guidance */}
           {hasData && <RecoveryGuidance data={currentNSRI} />}
 
-          {/* Section 6: Recovery Trajectory Curve */}
+          {/* Section 8: Recovery Trajectory Curve */}
           <RecoveryTrend currentData={currentNSRI} />
 
-          {/* Section 7: Live Wearable Simulation & 24-Hour Timeline */}
-          <MeasurementInput onMeasurementSaved={loadData} />
+          {/* Section 9: Live Wearable Simulation & 24-Hour Timeline */}
+          <MeasurementInput onMeasurementSaved={() => { loadData(); refreshSnapshots(); }} />
 
-          {/* Section 8: NIRA (Nervous-system Intelligence & Recovery Assistant) */}
+          {/* Section 10: NIRA (Nervous-system Intelligence & Recovery Assistant) */}
           <div id="nira-assistant" className="glass-card section-full" style={{ padding: '0', overflow: 'hidden' }}>
             <AIChat nsriData={currentNSRI} />
           </div>
 
-          {/* Section 9: 7-Day History Logs */}
+          {/* Section 11: 7-Day History Logs */}
           <div id="history" className="section-full">
             <History />
           </div>
         </div>
       </main>
+
+      {/* Snapshot Detail & PDF Export Modal */}
+      {activeSnapshotDetail && (
+        <SnapshotDetailModal 
+          snapshot={activeSnapshotDetail}
+          onClose={() => setActiveSnapshotDetail(null)}
+          onOpenCompare={(id) => handleOpenCompare(id, null)}
+          onDeleteSnapshot={handleDeleteSnapshot}
+        />
+      )}
+
+      {/* Snapshot Comparison Modal */}
+      {compareModal.isOpen && (
+        <SnapshotComparisonModal 
+          initialIdA={compareModal.idA}
+          initialIdB={compareModal.idB}
+          snapshots={snapshots}
+          onClose={() => setCompareModal({ isOpen: false, idA: null, idB: null })}
+        />
+      )}
 
       {/* Technical Deep Dive Modal for Judges */}
       <HowItWorksModal 
@@ -158,3 +313,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
